@@ -2,6 +2,16 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 
+const getJwtSecret = () => {
+  if (
+    config.nodeEnv === 'production' &&
+    (!config.jwtSecret || config.jwtSecret === 'your_secret_key' || config.jwtSecret === 'your_super_secret_jwt_key_change_this_in_production')
+  ) {
+    throw new Error('JWT secret is not securely configured for production');
+  }
+  return config.jwtSecret;
+};
+
 // Register user
 exports.register = async (req, res, next) => {
   try {
@@ -24,7 +34,7 @@ exports.register = async (req, res, next) => {
       name,
     });
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: config.jwtExpiresIn });
 
     res.status(201).json({
       success: true,
@@ -60,7 +70,7 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ id: user._id }, config.jwtSecret, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, getJwtSecret(), { expiresIn: config.jwtExpiresIn });
 
     res.json({
       success: true,

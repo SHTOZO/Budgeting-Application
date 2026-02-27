@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useBudget } from '../utils/hooks';
+import { CreateCategoryForm } from './Header';
 
 const styles = {
   container: {
@@ -67,6 +68,16 @@ const styles = {
     fontSize: '12px',
     fontWeight: '600',
   },
+  editButton: {
+    padding: '6px 12px',
+    backgroundColor: '#dbeafe',
+    color: '#1d4ed8',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '600',
+  },
   emptyState: {
     textAlign: 'center',
     padding: '40px 20px',
@@ -77,18 +88,34 @@ const styles = {
 export const CategoryList = ({ onClose }) => {
   const { categories, fetchCategories, deleteCategory, loading } = useBudget();
   const [deletingId, setDeletingId] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  const handleDelete = async (categoryId, categoryName) => {
-    if (window.confirm(`Delete category "${categoryName}"? This cannot be undone.`)) {
-      setDeletingId(categoryId);
-      await deleteCategory(categoryId);
-      setDeletingId(null);
-    }
+  const handleDelete = async (categoryId) => {
+    setDeletingId(categoryId);
+    await deleteCategory(categoryId);
+    setDeletingId(null);
+    setConfirmDeleteId(null);
   };
+
+  const handleEditSuccess = () => {
+    fetchCategories();
+    setEditingCategory(null);
+  };
+
+  if (editingCategory) {
+    return (
+      <CreateCategoryForm
+        initialCategory={editingCategory}
+        onCancel={() => setEditingCategory(null)}
+        onSuccess={handleEditSuccess}
+      />
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -119,17 +146,59 @@ export const CategoryList = ({ onClose }) => {
                 <span style={styles.categoryIcon}>{category.icon}</span>
                 <span style={styles.categoryName}>{category.name}</span>
               </div>
-              <button
-                onClick={() => handleDelete(category._id, category.name)}
-                disabled={deletingId === category._id}
-                style={{
-                  ...styles.deleteButton,
-                  cursor: deletingId === category._id ? 'not-allowed' : 'pointer',
-                  opacity: deletingId === category._id ? 0.7 : 1,
-                }}
-              >
-                {deletingId === category._id ? 'Deleting...' : '🗑️ Delete'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setEditingCategory(category)}
+                  style={styles.editButton}
+                >
+                  Edit
+                </button>
+                {confirmDeleteId === category._id ? (
+                  <>
+                    <button
+                      onClick={() => handleDelete(category._id)}
+                      disabled={deletingId === category._id}
+                      style={{
+                        ...styles.deleteButton,
+                        backgroundColor: '#dc2626',
+                        color: 'white',
+                        cursor: deletingId === category._id ? 'not-allowed' : 'pointer',
+                        opacity: deletingId === category._id ? 0.7 : 1,
+                      }}
+                    >
+                      {deletingId === category._id ? 'Deleting...' : 'Confirm Delete'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      disabled={deletingId === category._id}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#e5e7eb',
+                        color: '#374151',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(category._id)}
+                    disabled={deletingId === category._id}
+                    style={{
+                      ...styles.deleteButton,
+                      cursor: deletingId === category._id ? 'not-allowed' : 'pointer',
+                      opacity: deletingId === category._id ? 0.7 : 1,
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

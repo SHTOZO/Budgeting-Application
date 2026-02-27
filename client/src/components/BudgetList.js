@@ -82,6 +82,7 @@ const styles = {
 export const BudgetList = ({ onCreateBudget, onSelectBudget, refreshTrigger }) => {
   const { budgets, fetchBudgets, deleteBudget, loading } = useBudget();
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     fetchBudgets();
@@ -89,11 +90,10 @@ export const BudgetList = ({ onCreateBudget, onSelectBudget, refreshTrigger }) =
 
   const handleDeleteBudget = async (e, budgetId, budgetName) => {
     e.stopPropagation();
-    if (window.confirm(`Delete "${budgetName}" and all its expenses?`)) {
-      setDeletingId(budgetId);
-      await deleteBudget(budgetId);
-      setDeletingId(null);
-    }
+    setDeletingId(budgetId);
+    await deleteBudget(budgetId);
+    setDeletingId(null);
+    setConfirmDeleteId(null);
   };
 
   if (loading) return <div style={styles.container}>Loading...</div>;
@@ -147,23 +147,67 @@ export const BudgetList = ({ onCreateBudget, onSelectBudget, refreshTrigger }) =
                 <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', marginBottom: '12px' }}>
                   {budget.categories.length} categories • {budget.expenses?.length || 0} expenses
                 </p>
-                <button
-                  onClick={(e) => handleDeleteBudget(e, budget._id, budget.name)}
-                  disabled={deletingId === budget._id}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#fee2e2',
-                    color: '#dc2626',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: deletingId === budget._id ? 'not-allowed' : 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    opacity: deletingId === budget._id ? 0.7 : 1,
-                  }}
-                >
-                  {deletingId === budget._id ? 'Deleting...' : '🗑️ Delete'}
-                </button>
+                {confirmDeleteId === budget._id ? (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      onClick={(e) => handleDeleteBudget(e, budget._id, budget.name)}
+                      disabled={deletingId === budget._id}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: deletingId === budget._id ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        opacity: deletingId === budget._id ? 0.7 : 1,
+                      }}
+                    >
+                      {deletingId === budget._id ? 'Deleting...' : 'Confirm Delete'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteId(null);
+                      }}
+                      disabled={deletingId === budget._id}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#e5e7eb',
+                        color: '#374151',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteId(budget._id);
+                    }}
+                    disabled={deletingId === budget._id}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: deletingId === budget._id ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      opacity: deletingId === budget._id ? 0.7 : 1,
+                    }}
+                  >
+                    🗑️ Delete
+                  </button>
+                )}
               </div>
             );
           })}

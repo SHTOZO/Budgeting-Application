@@ -4,9 +4,10 @@ const config = require('../config/env');
 // Middleware to verify JWT token
 const authMiddleware = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization || '';
+    const [scheme, token] = authHeader.split(' ');
 
-    if (!token) {
+    if (scheme !== 'Bearer' || !token) {
       return res.status(401).json({ success: false, message: 'No token provided' });
     }
 

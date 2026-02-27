@@ -8,6 +8,8 @@ dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const config = require('./config/env');
 const errorHandler = require('./middleware/errorHandler');
@@ -21,8 +23,23 @@ const expenseRoutes = require('./routes/expenses');
 // Initialize express app
 const app = express();
 
+const apiLimiter = rateLimit({
+  windowMs: config.rateLimitWindowMs,
+  max: config.rateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+app.use('/api', apiLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

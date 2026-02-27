@@ -8,16 +8,22 @@ exports.getBudgets = async (req, res, next) => {
       .populate('categories.categoryId')
       .sort({ createdAt: -1 });
 
-    // Fetch expenses for each budget
-    const budgetsWithExpenses = await Promise.all(
-      budgets.map(async (budget) => {
-        const expenses = await Expense.find({ budgetId: budget._id });
-        return {
-          ...budget.toObject(),
-          expenses: expenses,
-        };
-      })
-    );
+    const budgetIds = budgets.map((budget) => budget._id);
+    const allExpenses = await Expense.find({ budgetId: { $in: budgetIds } });
+
+    const expensesByBudgetId = allExpenses.reduce((accumulator, expense) => {
+      const budgetId = expense.budgetId.toString();
+      if (!accumulator[budgetId]) {
+        accumulator[budgetId] = [];
+      }
+      accumulator[budgetId].push(expense);
+      return accumulator;
+    }, {});
+
+    const budgetsWithExpenses = budgets.map((budget) => ({
+      ...budget.toObject(),
+      expenses: expensesByBudgetId[budget._id.toString()] || [],
+    }));
 
     res.json({ success: true, data: budgetsWithExpenses });
   } catch (error) {

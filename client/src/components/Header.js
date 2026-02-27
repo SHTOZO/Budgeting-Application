@@ -2,6 +2,40 @@ import React, { useState } from 'react';
 import { useAuth } from '../utils/hooks';
 import { categoryService } from '../services/api';
 
+const CATEGORY_EMOJI_MAP = [
+  { emoji: '🍕', keywords: ['food', 'restaurant', 'dining', 'lunch', 'dinner', 'breakfast', 'meal', 'groceries', 'grocery'] },
+  { emoji: '☕', keywords: ['coffee', 'cafe'] },
+  { emoji: '🍺', keywords: ['bar', 'drinks', 'alcohol'] },
+  { emoji: '🚗', keywords: ['transport', 'car', 'taxi', 'uber', 'fuel', 'gas', 'petrol', 'parking'] },
+  { emoji: '🚌', keywords: ['bus', 'train', 'metro', 'subway', 'tram', 'public transport'] },
+  { emoji: '🏠', keywords: ['home', 'rent', 'housing', 'mortgage', 'utilities', 'electricity', 'water', 'internet'] },
+  { emoji: '🛍️', keywords: ['shopping', 'clothes', 'fashion', 'mall'] },
+  { emoji: '🎬', keywords: ['entertainment', 'movies', 'cinema', 'games', 'gaming'] },
+  { emoji: '🏥', keywords: ['health', 'medical', 'doctor', 'pharmacy', 'medicine'] },
+  { emoji: '💪', keywords: ['gym', 'fitness', 'workout', 'sport', 'sports'] },
+  { emoji: '📚', keywords: ['education', 'school', 'books', 'study', 'course'] },
+  { emoji: '💼', keywords: ['work', 'business', 'office'] },
+  { emoji: '✈️', keywords: ['travel', 'flight', 'vacation', 'holiday', 'trip', 'hotel'] },
+  { emoji: '🎁', keywords: ['gift', 'gifts', 'donation', 'charity'] },
+  { emoji: '🐶', keywords: ['pet', 'pets', 'dog', 'cat', 'veterinary'] },
+  { emoji: '👶', keywords: ['baby', 'kids', 'children', 'childcare'] },
+  { emoji: '💳', keywords: ['debt', 'loan', 'credit card', 'payment'] },
+  { emoji: '💰', keywords: ['savings', 'saving', 'investment', 'investing'] },
+];
+
+const suggestCategoryEmoji = (categoryName) => {
+  const normalizedName = categoryName.trim().toLowerCase();
+  if (!normalizedName) return '📁';
+
+  for (const entry of CATEGORY_EMOJI_MAP) {
+    if (entry.keywords.some((keyword) => normalizedName.includes(keyword))) {
+      return entry.emoji;
+    }
+  }
+
+  return '📁';
+};
+
 const styles = {
   container: {
     display: 'flex',
@@ -60,17 +94,37 @@ export const Header = ({ onLogout, onCreateCategory, onManageCategories, showCre
   );
 };
 
-export const CreateCategoryForm = ({ onCancel, onSuccess }) => {
+export const CreateCategoryForm = ({ onCancel, onSuccess, initialCategory = null }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    icon: '📁',
-    color: '#3b82f6',
+    name: initialCategory?.name || '',
+    icon: initialCategory?.icon || '📁',
+    color: initialCategory?.color || '#3b82f6',
   });
+  const [iconManuallyEdited, setIconManuallyEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isEditMode = !!initialCategory;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'icon') {
+      setIconManuallyEdited(true);
+      setFormData((prev) => ({ ...prev, icon: value }));
+      return;
+    }
+
+    if (name === 'name') {
+      setFormData((prev) => {
+        const next = { ...prev, name: value };
+        if (!iconManuallyEdited) {
+          next.icon = suggestCategoryEmoji(value);
+        }
+        return next;
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -80,11 +134,18 @@ export const CreateCategoryForm = ({ onCancel, onSuccess }) => {
     setError('');
 
     try {
-      await categoryService.createCategory(formData);
+      if (isEditMode) {
+        await categoryService.updateCategory(initialCategory._id, formData);
+      } else {
+        await categoryService.createCategory(formData);
+      }
       onSuccess();
       onCancel();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create category');
+      setError(
+        err.response?.data?.message ||
+          (isEditMode ? 'Failed to update category' : 'Failed to create category')
+      );
     } finally {
       setLoading(false);
     }
@@ -102,7 +163,7 @@ export const CreateCategoryForm = ({ onCancel, onSuccess }) => {
       }}
     >
       <h2 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
-        Create Category
+        {isEditMode ? 'Edit Category' : 'Create Category'}
       </h2>
 
       {error && (
@@ -168,20 +229,44 @@ export const CreateCategoryForm = ({ onCancel, onSuccess }) => {
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '6px' }}>
             Color
           </label>
-          <input
+          <div
             style={{
-              width: '100%',
-              padding: '10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
-              fontSize: '14px',
-              boxSizing: 'border-box',
+              padding: '8px 10px',
+              backgroundColor: '#fff',
             }}
-            type="color"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-          />
+          >
+            <input
+              style={{
+                width: '36px',
+                height: '28px',
+                border: 'none',
+                padding: 0,
+                background: 'none',
+                cursor: 'pointer',
+              }}
+              type="color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+            />
+            <div
+              style={{
+                flex: 1,
+                height: '12px',
+                borderRadius: '999px',
+                backgroundColor: formData.color,
+                border: '1px solid rgba(0,0,0,0.08)',
+              }}
+            />
+            <span style={{ fontSize: '12px', color: '#6b7280', minWidth: '64px', textAlign: 'right' }}>
+              {formData.color.toUpperCase()}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -215,7 +300,7 @@ export const CreateCategoryForm = ({ onCancel, onSuccess }) => {
             }}
             disabled={loading}
           >
-            {loading ? 'Creating...' : 'Create'}
+            {loading ? (isEditMode ? 'Saving...' : 'Creating...') : isEditMode ? 'Save' : 'Create'}
           </button>
         </div>
       </form>

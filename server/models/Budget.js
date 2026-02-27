@@ -54,4 +54,8 @@ const budgetSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+budgetSchema.index({ userId: 1, createdAt: -1 });
+budgetSchema.index({ userId: 1, startDate: -1, endDate: -1 });
+budgetSchema.index({ 'categories.categoryId': 1 });
+
 module.exports = mongoose.model('Budget', budgetSchema);
