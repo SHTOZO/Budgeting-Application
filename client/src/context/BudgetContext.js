@@ -1,11 +1,12 @@
 import React, { createContext, useState, useCallback } from 'react';
-import { budgetService, expenseService } from '../services/api';
+import { budgetService, expenseService, categoryService } from '../services/api';
 
 export const BudgetContext = createContext();
 
 export const BudgetProvider = ({ children }) => {
   const [budgets, setBudgets] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -119,9 +120,41 @@ export const BudgetProvider = ({ children }) => {
     [expenses]
   );
 
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await categoryService.getCategories();
+      setCategories(response.data.data);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to fetch categories');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteCategory = useCallback(
+    async (categoryId) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await categoryService.deleteCategory(categoryId);
+        setCategories(categories.filter((c) => c._id !== categoryId));
+        return true;
+      } catch (error) {
+        setError(error.response?.data?.message || 'Failed to delete category');
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categories]
+  );
+
   const value = {
     budgets,
     expenses,
+    categories,
     loading,
     error,
     fetchBudgets,
@@ -131,6 +164,8 @@ export const BudgetProvider = ({ children }) => {
     fetchExpenses,
     createExpense,
     deleteExpense,
+    fetchCategories,
+    deleteCategory,
   };
 
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;

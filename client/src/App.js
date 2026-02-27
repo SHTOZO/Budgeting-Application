@@ -6,6 +6,7 @@ import { BudgetList } from './components/BudgetList';
 import { BudgetDetail } from './components/BudgetDetail';
 import { CreateBudgetForm } from './components/CreateBudgetForm';
 import { CreateExpenseForm } from './components/ExpenseForm';
+import { CategoryList } from './components/CategoryList';
 import { categoryService, budgetService } from './services/api';
 
 const styles = {
@@ -27,6 +28,7 @@ function App() {
   const [showCreateBudget, setShowCreateBudget] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showCreateCategory, setShowCreateCategory] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
   const [categories, setCategories] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -104,6 +106,7 @@ function App() {
       <Header
         onLogout={handleLogout}
         onCreateCategory={() => setShowCreateCategory(true)}
+        onManageCategories={() => setShowManageCategories(true)}
         showCreateCategory={currentView === 'budgets' || currentView === 'budget-detail'}
       />
 
@@ -113,6 +116,10 @@ function App() {
             onCancel={() => setShowCreateCategory(false)}
             onSuccess={handleCreateCategorySuccess}
           />
+        )}
+
+        {showManageCategories && (
+          <CategoryList onClose={() => setShowManageCategories(false)} />
         )}
 
         {showCreateBudget ? (

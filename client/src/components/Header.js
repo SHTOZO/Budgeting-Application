@@ -34,7 +34,7 @@ const styles = {
   },
 };
 
-export const Header = ({ onLogout, onCreateCategory, showCreateCategory }) => {
+export const Header = ({ onLogout, onCreateCategory, onManageCategories, showCreateCategory }) => {
   const { user } = useAuth();
 
   return (
@@ -43,9 +43,14 @@ export const Header = ({ onLogout, onCreateCategory, showCreateCategory }) => {
       <div style={styles.rightSection}>
         <span style={styles.userName}>Welcome, {user?.name}</span>
         {showCreateCategory && (
-          <button style={styles.button} onClick={onCreateCategory}>
-            + Add Category
-          </button>
+          <>
+            <button style={styles.button} onClick={onCreateCategory}>
+              + Add Category
+            </button>
+            <button style={styles.button} onClick={onManageCategories}>
+              Manage Categories
+            </button>
+          </>
         )}
         <button style={styles.button} onClick={onLogout}>
           Logout
