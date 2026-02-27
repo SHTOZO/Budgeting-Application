@@ -1,5 +1,6 @@
 const dns = require('dns');
 const os = require('os');
+const path = require('path');
 
 // Configure DNS for better MongoDB Atlas connection
 dns.setDefaultResultOrder('ipv4first');
@@ -56,6 +57,19 @@ app.use('/api/expenses', expenseRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
+
+// Serve React app in production (single-service deployment)
+if (config.nodeEnv === 'production') {
+  const clientBuildPath = path.join(__dirname, '..', 'client', 'build');
+  app.use(express.static(clientBuildPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
