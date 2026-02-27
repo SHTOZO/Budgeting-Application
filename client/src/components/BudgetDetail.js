@@ -203,46 +203,63 @@ export const BudgetDetail = ({ budget, onBack, onAddExpense }) => {
 
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>
-          Categories
+          Spending by Category
         </h2>
 
-        <div style={styles.grid}>
-          {currentBudget.categories.map((cat) => {
-            const categoryExpenses = budgetExpenses.filter((e) => 
-              e.categoryId._id === cat.categoryId || 
-              e.categoryId._id?.toString() === cat.categoryId?.toString() ||
-              e.categoryId === cat.categoryId
-            );
-            const spent = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
-            const progress = calculateBudgetProgress(spent, cat.allocatedAmount);
+        {(() => {
+          // Group expenses by category
+          const categorySpending = {};
+          budgetExpenses.forEach((expense) => {
+            const catId = expense.categoryId._id || expense.categoryId;
+            if (!categorySpending[catId]) {
+              categorySpending[catId] = {
+                categoryId: catId,
+                spent: 0,
+                expenses: [],
+              };
+            }
+            categorySpending[catId].spent += expense.amount;
+            categorySpending[catId].expenses.push(expense);
+          });
 
+          const categoryList = Object.values(categorySpending);
+
+          if (categoryList.length === 0) {
             return (
-              <div key={cat.categoryId} style={styles.categoryCard}>
-                <div style={styles.categoryHeader}>
-                  <span style={styles.categoryName}>
-                    {categories.find((c) => c._id === cat.categoryId)?.icon}{' '}
-                    {categories.find((c) => c._id === cat.categoryId)?.name}
-                  </span>
-                </div>
-
-                <div style={styles.progressBar}>
-                  <div
-                    style={{
-                      ...styles.progressFill,
-                      width: `${progress}%`,
-                      backgroundColor: progress > 100 ? '#ef4444' : '#10b981',
-                    }}
-                  />
-                </div>
-
-                <div style={styles.categoryStats}>
-                  <span>{formatCurrency(spent)}</span>
-                  <span>{formatCurrency(cat.allocatedAmount)}</span>
-                </div>
-              </div>
+              <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>
+                No expenses yet. Click "+ Add Expense" to start tracking.
+              </p>
             );
-          })}
-        </div>
+          }
+
+          return (
+            <div style={styles.grid}>
+              {categoryList.map((cat) => {
+                const category = categories.find((c) => c._id === cat.categoryId);
+                if (!category) return null;
+
+                return (
+                  <div key={cat.categoryId} style={styles.categoryCard}>
+                    <div style={styles.categoryHeader}>
+                      <span style={styles.categoryName}>
+                        {category.icon} {category.name}
+                      </span>
+                    </div>
+
+                    <div style={styles.categoryStats}>
+                      <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                        {cat.expenses.length} expense{cat.expenses.length !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ fontSize: '18px', fontWeight: '700', color: '#1f2937' }}>
+                        {formatCurrency(cat.spent)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       <div>
